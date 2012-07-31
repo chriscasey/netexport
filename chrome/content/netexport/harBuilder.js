@@ -28,6 +28,11 @@ Firebug.NetExport.HARBuilder.prototype =
 
         // Build basic structure for data.
         var log = this.buildLog();
+        
+        // Gets ALL of the cookies from the browser. This was a fix for the 
+        // current implementation which missed session cookies that were
+        // created by javascript 
+        log.cookies = this.buildCookies();
 
         // Before enumerating requests, we need to call layout methods that renders
         // content of the panel. This ensures export even if the panel is not visible
@@ -60,6 +65,7 @@ Firebug.NetExport.HARBuilder.prototype =
         log.creator = {name: "Firebug", version: Firebug.version};
         log.browser = {name: appInfo.name, version: appInfo.version};
         log.pages = [];
+        log.cookies = [];
         log.entries = [];
         return log;
     },
@@ -80,6 +86,25 @@ Firebug.NetExport.HARBuilder.prototype =
         page.id = "page_" + (pageId ? pageId : "0");
         page.title = title ? title : this.context.getTitle();
         return page;
+    },
+
+    buildCookies: function(log)
+    {
+        var cookieMgr = Cc["@mozilla.org/cookiemanager;1"]  
+                  .getService(Ci.nsICookieManager);
+
+        cookieMgr = cookieMgr.QueryInterface(Ci.nsICookieManager);          
+
+        var cookies = []; 
+
+        for (var e = cookieMgr.enumerator; e.hasMoreElements();) {
+            var cookie = e.getNext();
+            cookie = cookie.QueryInterface(Ci.nsICookie2);
+            var jsonCookie = this.buildCookie(cookie);
+            cookies.push(jsonCookie);             
+        }
+
+        return cookies;          
     },
 
     getTopDocument: function(file)
@@ -253,6 +278,22 @@ Firebug.NetExport.HARBuilder.prototype =
             FBTrace.sysout("netexport.buildPostData; ", postData);
 
         return postData;
+    },
+
+    buildCookie: function(cookie)
+    {
+        var jsonCookie = {};
+        
+        jsonCookie.name = cookie.name;
+        jsonCookie.value = cookie.value;
+        jsonCookie.path = cookie.path;
+        jsonCookie.domain = cookie.host;
+        jsonCookie.expires = dateToJSON(new Date(cookie.expires));        
+        jsonCookie.httpOnly = cookie.isHttpOnly;
+        jsonCookie.secure = cookie.isSecure;
+        jsonCookie.comment = "";
+
+        return jsonCookie;
     },
 
     buildRequestCookies: function(file)
