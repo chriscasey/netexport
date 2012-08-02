@@ -107,6 +107,31 @@ Firebug.NetExport.HARBuilder.prototype =
         return cookies;          
     },
 
+    buildCookie: function(cookie)
+    {
+        var jsonCookie = {};
+        
+        jsonCookie.name = cookie.name;
+        jsonCookie.value = cookie.value;
+        jsonCookie.path = cookie.path;
+        jsonCookie.domain = cookie.rawHost;
+        jsonCookie.httpOnly = cookie.isHttpOnly;
+        jsonCookie.secure = cookie.isSecure;
+        jsonCookie.comment = "";
+        jsonCookie.creationDate = dateToJSON(new Date(cookie.creationTime / 1000));
+
+        if (!cookie.isSession)
+        {
+            jsonCookie.expires = dateToJSON(new Date(cookie.expiry * 1000));
+        }
+        else
+        {
+            jsonCookie.expires = null;            
+        }    
+
+        return jsonCookie;
+    },
+
     getTopDocument: function(file)
     {
         // Always get ID of the top document, not a document that comes from
@@ -278,22 +303,6 @@ Firebug.NetExport.HARBuilder.prototype =
             FBTrace.sysout("netexport.buildPostData; ", postData);
 
         return postData;
-    },
-
-    buildCookie: function(cookie)
-    {
-        var jsonCookie = {};
-        
-        jsonCookie.name = cookie.name;
-        jsonCookie.value = cookie.value;
-        jsonCookie.path = cookie.path;
-        jsonCookie.domain = cookie.host;
-        jsonCookie.expires = dateToJSON(new Date(cookie.expires));        
-        jsonCookie.httpOnly = cookie.isHttpOnly;
-        jsonCookie.secure = cookie.isSecure;
-        jsonCookie.comment = "";
-
-        return jsonCookie;
     },
 
     buildRequestCookies: function(file)
